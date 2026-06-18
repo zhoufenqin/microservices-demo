@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Assessment - microservices-demo</title>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-card: #f8f9fa;
+  --bg-page: #f0f1f3;
+  --text-primary: #24292f;
+  --text-secondary: #57606a;
+  --text-muted: #6b7280;
+  --border-color: #d0d7de;
+  --border-light: #e1e4e8;
+  --link-color: #2563eb;
+  --color-mandatory: #E3008C;
+  --color-potential: #637CEF;
+  --color-optional: #A19F9D;
+  --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-family); font-size: 13px; color: var(--text-primary); background: var(--bg-primary); line-height: 1.5; margin: 0; padding: 0; }
+a { color: var(--link-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Page layout ───────────────────────────────────────────── */
+.main { margin: 0; padding: 24px 32px; background: var(--bg-primary); }
+.back-link { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; display: block; }
+h1 { font-weight: 600; font-size: 20px; color: var(--text-primary); margin-bottom: 20px; }
+
+/* ── Report cards (matches VS Code .vscode-report-card) ──── */
+.report-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 4px; padding: 12px; margin-bottom: 20px; }
+.report-card h2 { font-size: 14px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.report-card-body { margin-top: 16px; }
+
+/* ── Component Information (two-column) ────────────────── */
+.app-info-container { display: flex; gap: 8px; flex-wrap: wrap; }
+.app-info-column { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 8px; }
+.app-info-row { display: flex; align-items: baseline; }
+.app-info-label { width: 136px; flex-shrink: 0; font-weight: 600; color: var(--text-primary); }
+.app-info-value { flex: 1; color: var(--text-primary); }
+
+/* ── Issue Summary (pie charts + legend) ─────────────────── */
+.cards-container { display: flex; align-items: stretch; gap: 20px; flex-wrap: wrap; }
+.issue-summary-card { flex: 2; }
+.domain-summary-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-around; }
+.domain-summary-item { flex: 1; min-width: 120px; text-align: center; padding: 0 16px; border-right: 1px solid var(--border-light); }
+.domain-summary-item:last-child { border-right: none; }
+.domain-summary-item h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 8px; }
+.domain-summary-item .count { font-size: 12px; color: var(--text-secondary); }
+.criticality-legend { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 12px; justify-content: center; }
+.criticality-legend .legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); }
+.legend-swatch { display: inline-block; width: 1em; height: 1em; border-radius: 2px; }
+
+/* ── Issue list tables ───────────────────────────────────── */
+.issue-section { margin-top: 20px; }
+.issue-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.issue-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 600px; }
+.issue-table th { text-align: left; text-transform: uppercase; font-weight: 600; font-size: calc(13px * 0.875); padding: 6px 8px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+.issue-table td { padding: 12px 8px; border-bottom: 1px solid var(--border-light); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.col-issue { width: 55%; }
+.col-criticality { width: 25%; }
+.col-storypoint { width: 20%; }
+
+/* ── Target dropdown ─────────────────────────────────────── */
+.target-select-container { margin: 4px 0 16px 0; display: flex; align-items: center; gap: 8px; }
+.target-select-container label { font-weight: 600; color: var(--text-primary); font-size: 14px; }
+.target-select-container select { font-family: var(--font-family); font-size: 13px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; }
+
+/* ── Filter bar ──────────────────────────────────────────── */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0 8px 0; align-items: center; }
+.multi-select { position: relative; display: inline-block; min-width: 140px; }
+.multi-select-btn { font-family: var(--font-family); font-size: 13px; padding: 4px 24px 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; width: 100%; text-align: left; position: relative; white-space: nowrap; }
+.multi-select-btn::after { content: '\25BE'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-secondary); }
+.multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; margin-top: 2px; }
+.multi-select.open .multi-select-dropdown { display: block; }
+.multi-select-option { display: flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.multi-select-option:hover { background: var(--bg-secondary); }
+.multi-select-option input[type=checkbox] { margin: 0; cursor: pointer; }
+.clear-filters { font-size: 12px; color: var(--link-color); cursor: pointer; margin-left: 4px; }
+
+/* ── Criticality labels (colored square + text) ──────────── */
+.crit-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.crit-square { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.crit-square-mandatory { background: var(--color-mandatory); }
+.crit-square-potential { background: var(--color-potential); }
+.crit-square-optional { background: var(--color-optional); }
+
+/* ── Expandable rows ─────────────────────────────────────── */
+.expand-btn { background: none; border: none; cursor: pointer; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: transform 0.15s; padding: 0; vertical-align: middle; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(90deg); }
+.issue-title-cell { display: flex; align-items: center; gap: 4px; }
+.detail-row td { padding: 0; border-bottom: 1px solid var(--border-light); white-space: normal; overflow: visible; text-overflow: clip; }
+.detail-content { display: flex; gap: 0; padding: 8px 8px 8px 32px; min-width: 0; }
+.file-list { flex: 0 0 50%; min-width: 0; overflow: hidden; }
+.file-list table { width: 100%; border-collapse: collapse; }
+.file-list th { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 8px; border-bottom: 1px solid var(--border-color); text-align: left; height: 32px; }
+.file-list td { font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.file-list .file-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; display: block; }
+.file-list .position { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.explanation-panel { flex: 1; padding-left: 16px; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; }
+.explanation-panel h4 { font-size: calc(13px * 0.875); text-transform: uppercase; font-weight: 600; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px solid var(--border-color); height: 32px; margin: 0; }
+.explanation-panel p { font-size: 13px; padding: 8px 0; color: var(--text-primary); line-height: 1.6; white-space: normal; word-break: break-word; }
+
+/* ── Experimental badge ──────────────────────────────────── */
+.badge-experimental { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #fef9c3; color: #854d0e; vertical-align: middle; margin-left: 8px; cursor: default; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.footer { text-align: center; margin-top: 24px; color: var(--text-muted); font-size: 13px; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .main { padding: 16px; }
+  .app-info-container { flex-direction: column; }
+  .domain-summary-container { flex-direction: column; }
+  .domain-summary-item { border-right: none; border-bottom: 1px solid var(--border-light); padding-bottom: 12px; }
+  .detail-content { flex-direction: column; }
+  .file-list { flex: none; width: 100%; }
+  .explanation-panel { padding-left: 0; padding-top: 8px; }
+}
+/* ── Tab navigation ──────────────────────────────────────── */
+.tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border-color); margin-bottom: 28px; flex-wrap: wrap; }
+.tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 18px; font-size: 13px; font-family: var(--font-family); color: var(--text-secondary); cursor: pointer; margin-bottom: -1px; white-space: nowrap; position: relative; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--link-color); border-bottom-color: var(--link-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── Tooltip on tab ──────────────────────────────────────── */
+.tab-btn[data-tooltip]::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: #24292f; color: #ffffff; font-size: 12px; font-weight: 400; padding: 6px 10px; border-radius: 4px; white-space: normal; width: max-content; max-width: 260px; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 100; }
+.tab-btn[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Fact content — prose column ─────────────────────────── */
+.fact-content { max-width: 860px; margin: 0 auto; line-height: 1.75; color: var(--text-primary); font-size: 14px; }
+.fact-content h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h1 + p { margin-top: 6px; color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.fact-content h2 { font-size: 17px; font-weight: 700; margin: 36px 0 12px 0; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); letter-spacing: -0.01em; }
+.fact-content h3 { font-size: 14px; font-weight: 700; margin: 24px 0 8px 0; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; font-size: 12px; color: var(--text-secondary); }
+.fact-content p { margin: 10px 0; color: var(--text-primary); }
+.fact-content ul, .fact-content ol { margin: 10px 0 10px 22px; }
+.fact-content li { margin: 5px 0; }
+.fact-content a { color: var(--link-color); }
+.fact-content a:hover { text-decoration: underline; }
+
+/* ── Fact tables ─────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; margin: 16px 0; }
+.fact-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+.fact-content thead { background: var(--bg-card); }
+.fact-content th { text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); }
+.fact-content td { padding: 9px 14px; border-bottom: 1px solid var(--border-light); vertical-align: top; color: var(--text-primary); }
+.fact-content tr:last-child td { border-bottom: none; }
+.fact-content tbody tr:hover { background: #f6f8fa; }
+
+/* ── Fact code ───────────────────────────────────────────── */
+.fact-content code { font-family: var(--font-mono); font-size: 12px; background: #f0f1f3; padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.fact-content pre { background: #f6f8fa; border: 1px solid var(--border-light); border-radius: 6px; padding: 14px 16px; overflow-x: auto; margin: 14px 0; }
+.fact-content pre code { background: none; color: var(--text-primary); padding: 0; border-radius: 0; }
+.fact-content hr { border: none; border-top: 1px solid var(--border-light); margin: 28px 0; }
+.fact-content strong { font-weight: 600; }
+.fact-content em { font-style: italic; }
+.fact-content blockquote { border-left: 3px solid var(--border-color); margin: 12px 0; padding: 4px 16px; color: var(--text-secondary); }
+.fact-unavailable { padding: 32px 0; }
+.fact-unavailable h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); text-transform: none; letter-spacing: 0; margin: 0 0 12px 0; }
+.fact-unavailable p { margin: 0 0 8px 0; color: var(--text-secondary); }
+.fact-unavailable ol, .fact-unavailable ul { margin: 0 0 0 22px; color: var(--text-primary); }
+.fact-unavailable li { margin: 6px 0; }
+
+/* ── Mermaid diagram card ─────────────────────────────────── */
+.mermaid { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px 16px; margin: 20px 0; overflow-x: auto; text-align: center; cursor: pointer; position: relative; }
+.mermaid:hover { border-color: var(--border-color); }
+.mermaid svg { max-width: 100%; height: auto !important; display: inline-block; }
+.mermaid-zoom-hint { position: absolute; top: 8px; right: 10px; font-size: 11px; color: var(--text-muted); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mermaid:hover .mermaid-zoom-hint { opacity: 1; }
+
+/* ── Diagram lightbox ────────────────────────────────────── */
+.diagram-lightbox { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center; cursor: zoom-out; padding: 48px 32px; }
+.diagram-lightbox.open { display: flex; }
+.diagram-lightbox-inner { background: #ffffff; border-radius: 10px; padding: 32px; width: 88vw; max-height: 88vh; overflow: hidden; cursor: default; box-shadow: 0 24px 64px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; }
+.diagram-lightbox-inner svg { width: 100% !important; height: auto !important; max-height: 76vh; display: block; }
+.diagram-lightbox-close { position: fixed; top: 20px; right: 24px; background: #ffffff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1001; }
+.diagram-lightbox-close:hover { background: var(--bg-card); }
+.diagram-lightbox-hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #ffffff; font-size: 12px; padding: 6px 14px; border-radius: 20px; pointer-events: none; white-space: nowrap; z-index: 1001; }
+</style>
+<script>
+window.__mermaidPending = [];
+window.__mermaidReady = false;
+window.__renderMermaidIn = function(container) {
+  if (container) { window.__mermaidPending.push(container); }
+};
+</script>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: false, theme: 'default', flowchart: { useMaxWidth: true }, sequence: { useMaxWidth: true } });
+
+window.__renderMermaidIn = function(container) {
+  var nodes = container ? container.querySelectorAll('.mermaid:not([data-processed])') : [];
+  if (nodes.length > 0) {
+    mermaid.run({ nodes: Array.from(nodes) }).then(function() {
+      nodes.forEach(function(node) {
+        if (!node.querySelector('.mermaid-zoom-hint')) {
+          var hint = document.createElement('span');
+          hint.className = 'mermaid-zoom-hint';
+          hint.textContent = 'Click to expand';
+          node.appendChild(hint);
+        }
+      });
+    });
+  }
+};
+
+var drained = new Set();
+(window.__mermaidPending || []).forEach(function(c) {
+  if (!drained.has(c)) { drained.add(c); window.__renderMermaidIn(c); }
+});
+window.__mermaidPending = [];
+window.__mermaidReady = true;
+
+function renderActivePanels() {
+  document.querySelectorAll('.tab-panel.active').forEach(function(p) {
+    if (!drained.has(p)) { drained.add(p); window.__renderMermaidIn(p); }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderActivePanels);
+} else {
+  renderActivePanels();
+}
+</script>
+</head><body>
+<div id="diagram-lightbox" class="diagram-lightbox" role="dialog" aria-modal="true">
+  <button class="diagram-lightbox-close" id="diagram-lightbox-close" aria-label="Close">&#x2715;</button>
+  <div class="diagram-lightbox-hint">Scroll to zoom &nbsp;&middot;&nbsp; Drag to pan &nbsp;&middot;&nbsp; Double-click to reset</div>
+  <div class="diagram-lightbox-inner" id="diagram-lightbox-inner"></div>
+</div>
+<div class="main">
+<h1>microservices-demo</h1>
+<div class="report-card">
+  <h2>Component Information</h2>
+  <div class="report-card-body">
+    <div class="app-info-container">
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Component Name</span><span class="app-info-value">microservices-demo</span></div>
+        <div class="app-info-row"><span class="app-info-label">Java Version</span><span class="app-info-value">Unknown</span></div>
+        <div class="app-info-row"><span class="app-info-label">Effort</span><span class="app-info-value" id="effort-display">S (total story points: 14)</span></div>
+      </div>
+      <div class="app-info-column">
+        <div class="app-info-row"><span class="app-info-label">Build Tools</span><span class="app-info-value">Gradle, Maven</span></div>
+        <div class="app-info-row"><span class="app-info-label">Frameworks</span><span class="app-info-value">Spring Boot, Spring Cloud, Spring</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-issues" data-tooltip="Issues detected in the source code">Issues</button>
+  <button class="tab-btn" data-tab="tab-arch" data-tooltip="How the app&#x27;s layers connect — from UI to data.">Architecture</button>
+  <button class="tab-btn" data-tab="tab-api" data-tooltip="Endpoints exposed by this app and how services communicate.">API Contracts</button>
+  <button class="tab-btn" data-tab="tab-config" data-tooltip="Environment settings, runtime profiles, and deployment manifests.">Configuration</button>
+  <button class="tab-btn" data-tab="tab-workflows" data-tooltip="Domain entities and the core flows users move through.">Business Workflows</button>
+  <button class="tab-btn" data-tab="tab-deps" data-tooltip="Libraries and frameworks this app depends on, grouped by category.">Dependencies</button>
+  <button class="tab-btn" data-tab="tab-data" data-tooltip="Database schema, entity relationships, and persistence behavior.">Data Model</button>
+</nav>
+<div id="tab-issues" class="tab-panel active">
+<div class="target-select-container">
+  <label for="target-select">Target Compute Service:</label>
+  <select id="target-select" onchange="onTargetChange(this.value)">
+    <option value="azure-aks">Azure Kubernetes Service</option>
+  </select>
+</div>
+<div class="report-card">
+  <h2>Issue Summary</h2>
+  <div class="report-card-body">
+    <div class="domain-summary-container" id="donut-container">
+      <div class="domain-summary-item">
+<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-mandatory)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-0.00"/>
+  <circle cx="50" cy="50" r="35" fill="none" stroke="var(--color-optional)" stroke-width="15" stroke-dasharray="108.46 219.91" stroke-dashoffset="-109.96"/>
+</svg>
+
+        <h3>Cloud Readiness</h3>
+        <div class="count">4 issues</div>
+      </div>
+    </div>
+    <div class="criticality-legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-mandatory)"></span>Mandatory</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-potential)"></span>Potential</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--color-optional)"></span>Optional</div>
+    </div>
+  </div>
+</div>
+<div class="filter-bar" id="filter-bar">
+  <div class="multi-select" id="criticality-ms">
+    <button class="multi-select-btn" onclick="toggleMultiSelect('criticality-ms')">Criticality</button>
+    <div class="multi-select-dropdown">
+      <label class="multi-select-option"><input type="checkbox" value="mandatory" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Mandatory</label>
+      <label class="multi-select-option"><input type="checkbox" value="optional" onchange="onMultiSelectChange('criticality-ms','Criticality')"/> Optional</label>
+    </div>
+  </div>
+  <a class="clear-filters" href="javascript:void(0)" onclick="clearAllFilters()">Clear all</a>
+</div>
+<div class="issue-section" data-domain="cloud-readiness">
+  <h2>Cloud Readiness</h2>
+  <table class="issue-table">
+    <colgroup><col class="col-issue"/><col class="col-criticality"/><col class="col-storypoint"/></colgroup>
+    <thead><tr><th>Issue Category</th><th>Criticality</th><th>Story Point</th></tr></thead>
+    <tbody>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{&quot;azure-aks&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;mandatory&quot;},&quot;azure-appservice&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;mandatory&quot;},&quot;azure-container-apps&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;mandatory&quot;}}' data-default-effort="3" data-default-severity="mandatory" data-rule="unsecure-network-protocol-00000" onclick="toggleRow('row-cloudreadiness-0', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-0">&#x276F;</button> Use of unsecured network protocols or URI libraries</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-0" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/web/WebAccountsService.java">src/main/java/io/pivotal/microservices/services/web/WebAccountsService.java</span></td><td><span class="position">Line 34</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/web/WebServer.java">src/main/java/io/pivotal/microservices/services/web/WebServer.java</span></td><td><span class="position">Line 31</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/accounts-server.yml">src/main/resources/accounts-server.yml</span></td><td><span class="position">Line 24</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/web-server.yml">src/main/resources/web-server.yml</span></td><td><span class="position">Line 29</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>Using secured protocols such as HTTPS and SFTP (over HTTP and FTP) should now be the norm as applications are more and more exposed and interconnected. <br/>This CloudReady patterns looks for unescured URI in the source code or deprecated URI libraries. <br/>Ideally, URLs should be replaced in your source code by secured protocols HTTPS and SFTP (and ensure the infrastructure implements these protocols for the resources your application calls, uses or references).</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="mandatory" data-targets='{&quot;azure-aks&quot;:{&quot;effort&quot;:5,&quot;severity&quot;:&quot;mandatory&quot;},&quot;azure-appservice&quot;:{&quot;effort&quot;:5,&quot;severity&quot;:&quot;mandatory&quot;},&quot;azure-container-apps&quot;:{&quot;effort&quot;:5,&quot;severity&quot;:&quot;mandatory&quot;}}' data-default-effort="5" data-default-severity="mandatory" data-rule="cra-insecure-random-01000" onclick="toggleRow('row-cloudreadiness-1', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-1">&#x276F;</button> CRA: Use of insecure random number generator java.util.Random</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-mandatory"></span>Mandatory</span></td>
+      <td class="sp-cell">5</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-1" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/accounts/AccountsConfiguration.java">src/main/java/io/pivotal/microservices/accounts/AccountsConfiguration.java</span></td><td><span class="position">Line 60</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p><strong>EU Cyber Resilience Act (Annex I, Part I, Section 2(c))</strong> requires the use of <strong>state of the art</strong> cryptographic mechanisms, which includes the use of cryptographically secure random number generators (CSPRNG).</p><p><code>java.util.Random</code> uses a linear congruential generator (LCG) which is <strong>not cryptographically secure</strong>. Its output is predictable given enough observations, making it unsuitable for:</p><ul><li>Token/session ID generation</li><li>Nonce/IV generation for encryption</li><li>Salt generation for password hashing</li><li>Any security-sensitive random value generation</li></ul><p><strong>Recommended actions:</strong></p><ul><li>Replace <code>new Random()</code> with <code>new SecureRandom()</code> for any security-relevant random number generation.</li><li>Replace <code>Math.random()</code> with <code>SecureRandom.nextDouble()</code> for security use cases.</li><li>Replace <code>ThreadLocalRandom.current()</code> with <code>SecureRandom</code> for security contexts.</li><li>Use <code>java.security.SecureRandom</code> which provides a CSPRNG backed by the OS entropy source.</li></ul></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{&quot;azure-aks&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;},&quot;azure-appservice&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;},&quot;azure-container-apps&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;}}' data-default-effort="3" data-default-severity="optional" data-rule="localhost-00004" onclick="toggleRow('row-cloudreadiness-2', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-2">&#x276F;</button> Localhost Usage</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-2" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/Main.java">src/main/java/io/pivotal/microservices/services/Main.java</span></td><td><span class="position">Line 25</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/Main.java">src/main/java/io/pivotal/microservices/services/Main.java</span></td><td><span class="position">Line 86</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/accounts/AccountsServer.java">src/main/java/io/pivotal/microservices/services/accounts/AccountsServer.java</span></td><td><span class="position">Line 44</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/web/WebServer.java">src/main/java/io/pivotal/microservices/services/web/WebServer.java</span></td><td><span class="position">Line 41</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/registration-server.yml">src/main/resources/registration-server.yml</span></td><td><span class="position">Line 9</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>The app is trying to use localhost, please try to migrate the resource to cloud</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    <tr class="issue-row" data-criticality="optional" data-targets='{&quot;azure-aks&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;},&quot;azure-appservice&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;},&quot;azure-container-apps&quot;:{&quot;effort&quot;:3,&quot;severity&quot;:&quot;optional&quot;}}' data-default-effort="3" data-default-severity="optional" data-rule="hardcoded-urls-00001" onclick="toggleRow('row-cloudreadiness-3', this)" style="cursor:pointer;">
+      <td style="white-space:normal;"><div class="issue-title-cell"><button class="expand-btn" id="btn-row-cloudreadiness-3">&#x276F;</button> Avoid using hardcoded URLs (HTTP protocol) in source code</div></td>
+      <td class="crit-cell"><span class="crit-label"><span class="crit-square crit-square-optional"></span>Optional</span></td>
+      <td class="sp-cell">3</td>
+    </tr>
+    <tr class="detail-row" id="row-cloudreadiness-3" style="display:none;">
+      <td colspan="3">
+        <div class="detail-content">
+          <div class="file-list">
+            <table><colgroup><col style="width:70%"/><col style="width:30%"/></colgroup>
+            <thead><tr><th>File</th><th>Position</th></tr></thead><tbody>
+            <tr><td><span class="file-path" title="src/main/java/io/pivotal/microservices/services/web/WebServer.java">src/main/java/io/pivotal/microservices/services/web/WebServer.java</span></td><td><span class="position">Line 31</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/accounts-server.yml">src/main/resources/accounts-server.yml</span></td><td><span class="position">Line 24</span></td></tr>
+            <tr><td><span class="file-path" title="src/main/resources/web-server.yml">src/main/resources/web-server.yml</span></td><td><span class="position">Line 29</span></td></tr>
+            </tbody></table>
+          </div>
+          <div class="explanation-panel">
+            <h4>Explanation</h4>
+            <div><p>This patterns verifies in source code and configuration files the presence of hardcoded URLs using the HTTP protocol (HTTP/HTTPS). This URL would need to be replaced by the new resource&#x27;s URL during the Cloud migration, if any change occured.</p></div>
+          </div>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</div><!-- #tab-issues -->
+<div id="tab-arch" class="tab-panel">
+  <div class="fact-content"><h1 id="architecture-diagram">Architecture Diagram</h1>
+<p>This repository packages three Spring Boot processes in one deployable artifact: Eureka registration server, accounts API service, and a web UI service. The system is service-discovery driven and centered on account lookup use cases.</p>
+<h2 id="application-architecture">Application Architecture</h2>
+<div class="mermaid">
+flowchart TD
+    subgraph Client["Client Layer"]
+        Browser["Web Browser"]
+    end
+    subgraph App["Application Layer - Spring Boot 2.4.2"]
+        Reg["Registration Server Eureka"]
+        Web["Web Service Spring MVC Thymeleaf"]
+        Acc["Accounts Service REST API"]
+    end
+    subgraph Data["Data Layer"]
+        JPA["Spring Data JPA"]
+        DB[("Embedded HSQLDB")]
+    end
+    subgraph External["External Integrations"]
+        None["No third party external API"]
+    end
+
+    Browser -->|"HTTP 3333 UI requests"| Web
+    Web -->|"service discovery"| Reg
+    Acc -->|"service registration"| Reg
+    Web -->|"REST account lookup"| Acc
+    Acc -->|"CRUD queries"| JPA
+    JPA -->|"SQL"| DB
+</div>
+<h3 id="technology-stack-summary">Technology Stack Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th>
+</tr></thead><tbody>
+<tr><td>Presentation</td><td>Spring MVC + Thymeleaf</td><td>Boot 2.4.2 managed</td><td>Server-rendered web UI</td></tr>
+<tr><td>Service Discovery</td><td>Netflix Eureka Server/Client</td><td>Spring Cloud 2020.0.0 managed</td><td>Service registration and lookup</td></tr>
+<tr><td>Business/API</td><td>Spring Boot Web REST</td><td>Boot 2.4.2 managed</td><td>Account retrieval endpoints</td></tr>
+<tr><td>Data Access</td><td>Spring Data JPA</td><td>Boot 2.4.2 managed</td><td>Repository abstraction</td></tr>
+<tr><td>Data Store</td><td>HSQLDB embedded</td><td>managed</td><td>In-memory account storage</td></tr>
+</tbody></table></div>
+<h3 id="data-storage-external-services">Data Storage & External Services</h3>
+<p>The accounts service persists data in an embedded relational database initialized from SQL scripts and accessed via Spring Data JPA. The web service calls the accounts service through a load-balanced RestTemplate resolved through Eureka; no outbound third-party API dependency is defined.</p>
+<h3 id="key-architectural-decisions">Key Architectural Decisions</h3>
+<ul>
+<li>Single Maven artifact hosts multiple Spring Boot entry points selected at startup (<code>registration</code>, <code>accounts</code>, <code>web</code>).</li>
+<li>Service-to-service communication uses logical service names and Eureka rather than hardcoded host addresses.</li>
+<li>Accounts persistence is intentionally local and in-memory for demo and fast-start behavior.</li>
+</ul>
+<h2 id="component-relationships">Component Relationships</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph Presentation
+        HomeCtl["HomeController"]
+        WebAccCtl["WebAccountsController"]
+        Search["SearchCriteria"]
+    end
+    subgraph Business["Business Logic"]
+        WebAccSvc["WebAccountsService"]
+        AccCtl["AccountsController"]
+    end
+    subgraph DataAccess["Data Access"]
+        AccRepo["AccountRepository"]
+        AccEntity["Account Entity"]
+    end
+    subgraph Infrastructure["Infrastructure"]
+        WebSrv["WebServer"]
+        AccSrv["AccountsServer"]
+        RegSrv["RegistrationServer"]
+        LBRT["LoadBalanced RestTemplate"]
+    end
+
+    HomeCtl -->|"routes"| WebAccCtl
+    Search -->|"validates input"| WebAccCtl
+    WebAccCtl -->|"delegates"| WebAccSvc
+    WebAccSvc -->|"HTTP calls"| LBRT
+    LBRT -->|"lookup via Eureka"| RegSrv
+    LBRT -->|"GET /accounts"| AccCtl
+    AccCtl -->|"queries"| AccRepo
+    AccRepo -->|"maps"| AccEntity
+    WebSrv -.->|"creates beans"| WebAccCtl
+    AccSrv -.->|"imports config"| AccRepo
+</div>
+<h3 id="component-inventory">Component Inventory</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Layer</th><th>Type</th><th>Responsibility</th>
+</tr></thead><tbody>
+<tr><td>WebAccountsController</td><td>Presentation</td><td>MVC Controller</td><td>Handles web account search and detail pages</td></tr>
+<tr><td>SearchCriteria</td><td>Presentation</td><td>Form model/validator</td><td>Enforces search input rules</td></tr>
+<tr><td>WebAccountsService</td><td>Business Logic</td><td>Service</td><td>Calls accounts microservice through load-balanced REST</td></tr>
+<tr><td>AccountsController</td><td>Business Logic</td><td>REST Controller</td><td>Exposes account lookup endpoints</td></tr>
+<tr><td>AccountRepository</td><td>Data Access</td><td>Spring Data Repository</td><td>Fetches accounts by number/owner and count</td></tr>
+<tr><td>Account</td><td>Data Access</td><td>JPA Entity</td><td>Represents persisted account record</td></tr>
+<tr><td>WebServer</td><td>Infrastructure</td><td>Boot application</td><td>Configures web-side beans and discovery client</td></tr>
+<tr><td>AccountsServer</td><td>Infrastructure</td><td>Boot application</td><td>Runs accounts API and JPA configuration</td></tr>
+<tr><td>RegistrationServer</td><td>Infrastructure</td><td>Eureka server</td><td>Hosts service registry</td></tr>
+</tbody></table></div>
+<pre><code>
+
+</code></pre></div>
+</div>
+<div id="tab-api" class="tab-panel">
+  <div class="fact-content"><h1 id="api-service-communication-contracts">API & Service Communication Contracts</h1>
+<p>The application exposes a small API surface for account lookup and a server-rendered web interface that consumes those endpoints. Communication is synchronous HTTP with discovery-based routing and no asynchronous messaging.</p>
+<h2 id="service-catalog">Service Catalog</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Port</th><th>Category</th><th>Purpose</th>
+</tr></thead><tbody>
+<tr><td>registration-server</td><td>1111</td><td>Infrastructure</td><td>Eureka registry for service registration and lookup</td></tr>
+<tr><td>accounts-service</td><td>2222</td><td>Business</td><td>REST API for account retrieval by account number and owner name</td></tr>
+<tr><td>web-service</td><td>3333</td><td>API Layer</td><td>MVC UI that queries accounts-service and renders pages</td></tr>
+</tbody></table></div>
+<h2 id="api-endpoints-inventory">API Endpoints Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Method</th><th>Path</th><th>Request Type</th><th>Response Type</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>GET</td><td>/accounts/{accountNumber}</td><td>Path param <code>String accountNumber</code></td><td><code>Account</code> or error (not found)</td></tr>
+<tr><td>accounts-service</td><td>GET</td><td>/accounts/owner/{name}</td><td>Path param <code>String name</code></td><td><code>List<Account></code> or error (not found)</td></tr>
+<tr><td>web-service</td><td>GET</td><td>/accounts/{accountNumber}</td><td>Path param</td><td>HTML view (<code>account</code>)</td></tr>
+<tr><td>web-service</td><td>GET</td><td>/accounts/owner/{text}</td><td>Path param</td><td>HTML view (<code>accounts</code>)</td></tr>
+<tr><td>web-service</td><td>GET</td><td>/accounts/search</td><td>None</td><td>HTML search form view</td></tr>
+<tr><td>web-service</td><td>GET</td><td>/accounts/dosearch</td><td>Query/form params via <code>SearchCriteria</code></td><td>HTML search/detail/list view</td></tr>
+<tr><td>web-service</td><td>GET</td><td>/</td><td>None</td><td>HTML index view</td></tr>
+<tr><td>accounts-service</td><td>GET</td><td>/</td><td>None</td><td>HTML index view</td></tr>
+</tbody></table></div>
+<h2 id="management-observability-endpoints">Management & Observability Endpoints</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Endpoint</th><th>Custom Metrics (if any)</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>/actuator/* (web exposure include all)</td><td>None detected</td></tr>
+<tr><td>web-service</td><td>/actuator/* (web exposure include all)</td><td>None detected</td></tr>
+<tr><td>registration-server</td><td>Eureka dashboard root</td><td>None detected</td></tr>
+</tbody></table></div>
+<h2 id="dtos-contracts">DTOs & Contracts</h2>
+<ul>
+<li><code>io.pivotal.microservices.accounts.Account</code> is both the service-level domain entity and JSON response contract returned by accounts-service.</li>
+<li><code>io.pivotal.microservices.services.web.Account</code> mirrors the account payload on web-service side for deserialization and rendering.</li>
+<li><code>io.pivotal.microservices.services.web.SearchCriteria</code> is a request model for query/form binding in web UI search flow.</li>
+<li>No OpenAPI/Swagger, protobuf, or GraphQL contract artifacts were found.</li>
+<li>Serialization relies on Spring Boot defaults (Jackson).</li>
+</ul>
+<h2 id="communication-patterns">Communication Patterns</h2>
+<ul>
+<li><strong>Synchronous</strong>: web-service uses <code>LoadBalanced RestTemplate</code> to call accounts-service by logical name <code>ACCOUNTS-SERVICE</code>.</li>
+<li><strong>Asynchronous</strong>: none detected (no queue/broker client dependencies).</li>
+<li><strong>Service discovery</strong>: Eureka client registration and lookup against registration-server.</li>
+<li><strong>Resilience</strong>: no explicit circuit breaker/retry library configured; web-service handles some HTTP errors (e.g., not-found) and returns null-driven fallback UI states.</li>
+<li><strong>Startup dependency chain</strong>: registration-server should start first for reliable discovery; accounts-service and web-service can then register and resolve each other.</li>
+<li><strong>Security posture</strong>: no API authentication, authorization, or TLS configuration is defined in service configs; actuator is fully exposed in current profile.</li>
+</ul>
+<h2 id="service-technology-matrix">Service Technology Matrix</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Web</th><th>Data Access</th><th>Discovery</th><th>Gateway</th><th>Actuator</th><th>Cache</th><th>Metrics</th>
+</tr></thead><tbody>
+<tr><td>registration-server</td><td>Eureka server UI</td><td>None</td><td>Server</td><td>No</td><td>Not explicit</td><td>No</td><td>Basic actuator through Boot defaults</td></tr>
+<tr><td>accounts-service</td><td>Spring MVC REST</td><td>Spring Data JPA + embedded DB</td><td>Client</td><td>No</td><td>Yes</td><td>No</td><td>Basic actuator</td></tr>
+<tr><td>web-service</td><td>Spring MVC + Thymeleaf</td><td>None</td><td>Client</td><td>No</td><td>Yes</td><td>No</td><td>Basic actuator</td></tr>
+</tbody></table></div>
+<h2 id="service-communication-sequence">Service Communication Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant User as "User Browser"
+    participant Web as "web-service"
+    participant Reg as "registration-server"
+    participant Acc as "accounts-service"
+    participant DB as "embedded database"
+
+    User->>Web: GET /accounts/dosearch
+    Web->>Web: Validate SearchCriteria
+    Web->>Reg: Resolve ACCOUNTS-SERVICE
+    Reg-->>Web: Instance endpoint
+    Web->>Acc: GET /accounts/{accountNumber}
+    Acc->>DB: Query account by number
+    DB-->>Acc: Account row
+    Acc-->>Web: Account JSON
+    Web-->>User: HTML account view
+</div></div>
+</div>
+<div id="tab-config" class="tab-panel">
+  <div class="fact-content"><h1 id="configuration-externalized-settings-inventory">Configuration & Externalized Settings Inventory</h1>
+<p>Configuration is file-driven with per-process YAML files plus shared database settings and SQL bootstrap scripts. Runtime behavior is mostly controlled through Spring config properties and startup system properties.</p>
+<h2 id="configuration-sources">Configuration Sources</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Source</th><th>Type</th><th>Path/Location</th><th>Notes</th>
+</tr></thead><tbody>
+<tr><td><code>accounts-server.yml</code></td><td>Spring runtime config</td><td><code>src/main/resources/accounts-server.yml</code></td><td>accounts-service name, port, eureka client, actuator exposure</td></tr>
+<tr><td><code>web-server.yml</code></td><td>Spring runtime config</td><td><code>src/main/resources/web-server.yml</code></td><td>web-service name, port, eureka client, actuator exposure</td></tr>
+<tr><td><code>registration-server.yml</code></td><td>Spring runtime config</td><td><code>src/main/resources/registration-server.yml</code></td><td>eureka server + host/port settings</td></tr>
+<tr><td><code>db-config.properties</code></td><td>Spring persistence config</td><td><code>src/main/resources/db-config.properties</code></td><td>JPA/Hibernate behavior for accounts-service</td></tr>
+<tr><td><code>schema.sql</code></td><td>DB schema bootstrap</td><td><code>src/main/resources/testdb/schema.sql</code></td><td>DDL for <code>T_ACCOUNT</code></td></tr>
+<tr><td><code>data.sql</code></td><td>Seed data</td><td><code>src/main/resources/testdb/data.sql</code></td><td>Demo account seed rows</td></tr>
+<tr><td>JVM system properties</td><td>Startup parameters</td><td>set in <code>Main</code>, <code>*Server</code> classes</td><td><code>spring.config.name</code>, registration hostname, optional server port</td></tr>
+</tbody></table></div>
+<h2 id="build-profiles">Build Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation</th><th>Purpose</th><th>Key Dependencies/Plugins</th>
+</tr></thead><tbody>
+<tr><td>default Maven build</td><td><code>./mvnw ...</code></td><td>Build executable jar</td><td><code>spring-boot-maven-plugin</code></td></tr>
+</tbody></table></div>
+<h2 id="runtime-profiles">Runtime Profiles</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Profile</th><th>Activation Method</th><th>Config Files</th><th>Key Overrides</th>
+</tr></thead><tbody>
+<tr><td>registration process</td><td><code>spring.config.name=registration-server</code></td><td><code>registration-server.yml</code></td><td>port 1111, eureka server mode</td></tr>
+<tr><td>accounts process</td><td><code>spring.config.name=accounts-server</code></td><td><code>accounts-server.yml</code> + <code>db-config.properties</code></td><td>port 2222, service name/accounts discovery + JPA behavior</td></tr>
+<tr><td>web process</td><td><code>spring.config.name=web-server</code></td><td><code>web-server.yml</code></td><td>port 3333, service name/web discovery</td></tr>
+</tbody></table></div>
+<h2 id="properties-inventory">Properties Inventory</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Property Key</th><th>Default</th><th>Profiles</th><th>Source</th>
+</tr></thead><tbody>
+<tr><td><code>spring.application.name</code></td><td><code>accounts-service</code> / <code>web-service</code></td><td>process-specific</td><td><code>accounts-server.yml</code>, <code>web-server.yml</code></td></tr>
+<tr><td><code>server.port</code></td><td><code>2222</code>, <code>3333</code>, <code>1111</code></td><td>process-specific</td><td>all server yml files</td></tr>
+<tr><td><code>eureka.client.serviceUrl.defaultZone</code></td><td><code>http://${registration.server.hostname}:1111/eureka/</code></td><td>accounts, web</td><td><code>accounts-server.yml</code>, <code>web-server.yml</code></td></tr>
+<tr><td><code>eureka.client.registerWithEureka</code></td><td><code>false</code></td><td>registration</td><td><code>registration-server.yml</code></td></tr>
+<tr><td><code>management.endpoints.web.exposure.include</code></td><td><code>*</code></td><td>accounts, web</td><td><code>accounts-server.yml</code>, <code>web-server.yml</code></td></tr>
+<tr><td><code>spring.jpa.hibernate.ddl-auto</code></td><td><code>validate</code></td><td>accounts</td><td><code>db-config.properties</code></td></tr>
+<tr><td><code>spring.jpa.database</code></td><td><code>H2</code></td><td>accounts</td><td><code>db-config.properties</code></td></tr>
+</tbody></table></div>
+<h2 id="startup-parameters-resource-requirements">Startup Parameters & Resource Requirements</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>JVM/Runtime Options</th><th>Memory</th><th>Instance Count</th>
+</tr></thead><tbody>
+<tr><td>registration-server</td><td><code>spring.config.name=registration-server</code></td><td>Not specified</td><td>1 (default usage)</td></tr>
+<tr><td>accounts-service</td><td><code>spring.config.name=accounts-server</code>; optional <code>server.port</code> argument</td><td>Not specified</td><td>1+ (README demonstrates scaling accounts instance)</td></tr>
+<tr><td>web-service</td><td><code>spring.config.name=web-server</code></td><td>Not specified</td><td>1</td></tr>
+</tbody></table></div>
+<h2 id="startup-dependency-chain">Startup Dependency Chain</h2>
+<ol>
+<li><code>registration-server</code> starts first and exposes Eureka registry.</li>
+<li><code>accounts-service</code> starts, reads registration host property, and registers with Eureka.</li>
+<li><code>web-service</code> starts, registers with Eureka, and resolves <code>ACCOUNTS-SERVICE</code> for downstream calls.</li>
+</ol>
+<h2 id="secrets-sensitive-configuration">Secrets & Sensitive Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Secret Reference</th><th>Type</th><th>Storage (masked)</th>
+</tr></thead><tbody>
+<tr><td>None explicit</td><td>N/A</td><td>No dedicated secret store references detected</td></tr>
+</tbody></table></div>
+<h3 id="secrets-provisioning-workflow">Secrets Provisioning Workflow</h3>
+<p>No explicit secrets provisioning workflow is defined in repository configuration. The demo uses embedded/local data without credentialed external service dependencies in checked-in config files.</p>
+<h2 id="feature-flags">Feature Flags</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Flag Name</th><th>Default</th><th>Controlled By</th>
+</tr></thead><tbody>
+<tr><td>None detected</td><td>N/A</td><td>N/A</td></tr>
+</tbody></table></div>
+<h2 id="framework-runtime-versions">Framework & Runtime Versions</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Component</th><th>Version</th><th>Source</th>
+</tr></thead><tbody>
+<tr><td>Spring Boot</td><td>2.4.2</td><td><code>pom.xml</code> parent</td></tr>
+<tr><td>Spring Cloud dependencies</td><td>2020.0.0</td><td><code>pom.xml</code> dependencyManagement</td></tr>
+<tr><td>Maven wrapper</td><td>Wrapper script present</td><td><code>mvnw</code>, <code>.mvn/wrapper</code></td></tr>
+<tr><td>Java runtime target</td><td>Spring Boot 2.x compatible</td><td>managed by dependency stack</td></tr>
+</tbody></table></div></div>
+</div>
+<div id="tab-workflows" class="tab-panel">
+  <div class="fact-content"><h1 id="core-business-workflows">Core Business Workflows</h1>
+<p>The application supports account lookup workflows for end users through a web UI backed by a dedicated accounts microservice. Business behavior is centered on validating search intent and returning account details or filtered account lists.</p>
+<h2 id="domain-entities">Domain Entities</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Service / Bounded Context</th><th>Description</th><th>Key Relationships</th>
+</tr></thead><tbody>
+<tr><td>Account</td><td>Accounts Management (accounts-service)</td><td>Customer account record with owner identity and balance</td><td>Queried by account number and owner-name search</td></tr>
+<tr><td>SearchCriteria</td><td>Web Interaction (web-service)</td><td>User-provided search intent (number or text) with validation rules</td><td>Drives branch to exact lookup or owner-name lookup</td></tr>
+</tbody></table></div>
+<h2 id="service-to-domain-mapping">Service-to-Domain Mapping</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Domain Context</th><th>Owned Entities</th><th>External Dependencies</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>Accounts Management</td><td>Account</td><td>None for business data</td></tr>
+<tr><td>web-service</td><td>Account Search Experience</td><td>SearchCriteria (request model)</td><td>accounts-service via REST and Eureka</td></tr>
+<tr><td>registration-server</td><td>Service Registry</td><td>None</td><td>Eureka clients</td></tr>
+</tbody></table></div>
+<h2 id="primary-workflows">Primary Workflows</h2>
+<h3 id="workflow-1-search-account-by-account-number">Workflow 1: Search account by account number</h3>
+<ol>
+<li>User submits account number through <code>/accounts/dosearch</code>.</li>
+<li><code>SearchCriteria.validate</code> enforces 9-digit numeric format and mutual exclusivity with free-text search.</li>
+<li>web-service calls accounts-service <code>/accounts/{accountNumber}</code>.</li>
+<li>accounts-service queries repository and returns account or not-found.</li>
+<li>web-service renders account detail page (or missing-account page).</li>
+</ol>
+<h3 id="workflow-2-search-accounts-by-owner-text">Workflow 2: Search accounts by owner text</h3>
+<ol>
+<li>User submits owner text search through <code>/accounts/dosearch</code> or <code>/accounts/owner/{text}</code>.</li>
+<li>Validation ensures owner text is provided when account number is absent.</li>
+<li>web-service calls accounts-service <code>/accounts/owner/{name}</code>.</li>
+<li>accounts-service performs case-insensitive contains search and returns matching list.</li>
+<li>web-service renders account list page.</li>
+</ol>
+<h2 id="cross-service-data-flows">Cross-Service Data Flows</h2>
+<p>The only cross-service business flow is <strong>web-service → accounts-service</strong> for account retrieval. Data composition is minimal: web-service forwards search parameters, receives account payload(s), and maps them into HTML views. If downstream lookups return no data, the workflow degrades to empty/not-found user responses rather than retrying or composing alternate data sources.</p>
+<h2 id="business-workflow-sequence">Business Workflow Sequence</h2>
+<div class="mermaid">
+sequenceDiagram
+    participant User
+    participant Web as "web-service"
+    participant Search as "SearchCriteria"
+    participant Acc as "accounts-service"
+    participant Repo as "AccountRepository"
+
+    User->>Web: Submit account search form
+    Web->>Search: Validate request intent
+    alt Account number provided
+        Web->>Acc: Request account by number
+        Acc->>Repo: Find by account number
+        Repo-->>Acc: Account or none
+        Acc-->>Web: Account result
+        Web-->>User: Render account detail or not found
+    else Owner text provided
+        Web->>Acc: Request accounts by owner text
+        Acc->>Repo: Find by owner contains ignore case
+        Repo-->>Acc: Matching accounts
+        Acc-->>Web: Account list
+        Web-->>User: Render account list
+    end
+</div>
+<h2 id="business-rules-decision-logic">Business Rules & Decision Logic</h2>
+<ul>
+<li>Search requests must provide <strong>exactly one</strong> of: account number or search text.</li>
+<li>Account number must be numeric and exactly 9 digits.</li>
+<li>Owner search is case-insensitive and supports partial matches.</li>
+<li>If no account(s) are found, accounts-service raises not-found behavior and web-service maps this to user-facing empty/not-found views.</li>
+<li>Business transaction scope is read-only lookup; no state mutation workflow is present.</li>
+</ul></div>
+</div>
+<div id="tab-deps" class="tab-panel">
+  <div class="fact-content"><h1 id="dependency-map">Dependency Map</h1>
+<p>This project declares a compact dependency set around Spring Boot, Spring Cloud, and JPA, with most versions managed by BOMs. Excluding test scope, there are 7 primary declared dependencies.</p>
+<h2 id="dependencies">Dependencies</h2>
+<div class="mermaid">
+flowchart LR
+    App["microservices-demo"]
+    SBP["Spring Boot Parent 2.4.2"]
+    SCB["Spring Cloud BOM 2020.0.0"]
+
+    subgraph Web["Web Frameworks"]
+        StarterWeb["spring-boot-starter-web managed"]
+        Thymeleaf["spring-boot-starter-thymeleaf managed"]
+        Starter["spring-boot-starter managed"]
+    end
+
+    subgraph DB["Database / ORM"]
+        DataJpa["spring-boot-starter-data-jpa managed"]
+        SpringDataCommon["spring-data-commons managed"]
+        Hsqldb["hsqldb managed"]
+    end
+
+    subgraph Discovery["Utilities"]
+        CloudStarter["spring-cloud-starter managed"]
+        EurekaServer["spring-cloud-starter-netflix-eureka-server managed"]
+    end
+
+    App -->|"web"| Web
+    App -->|"persistence"| DB
+    App -->|"discovery"| Discovery
+    SBP -.->|"manages"| StarterWeb
+    SBP -.->|"manages"| DataJpa
+    SBP -.->|"manages"| Thymeleaf
+    SCB -.->|"manages"| CloudStarter
+    SCB -.->|"manages"| EurekaServer
+</div>
+<h3 id="dependency-summary">Dependency Summary</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Category</th><th>Count</th><th>Key Libraries</th><th>Notes</th>
+</tr></thead><tbody>
+<tr><td>Web Frameworks</td><td>3</td><td>spring-boot-starter-web, spring-boot-starter-thymeleaf</td><td>MVC and server-side templates</td></tr>
+<tr><td>Database / ORM</td><td>3</td><td>spring-boot-starter-data-jpa, hsqldb</td><td>JPA with embedded DB</td></tr>
+<tr><td>Utilities</td><td>2</td><td>spring-cloud-starter, eureka-server starter</td><td>Discovery and cloud bootstrap</td></tr>
+</tbody></table></div>
+<h3 id="version-compatibility-risks">Version & Compatibility Risks</h3>
+<p>The stack is pinned to Spring Boot 2.4.2 / Spring Cloud 2020.0.0, which is an older generation and may require coordinated upgrades for modern Java runtimes and current Spring Cloud components.</p>
+<h3 id="notable-observations">Notable Observations</h3>
+<ul>
+<li>Version management is centralized through Spring Boot parent and Spring Cloud BOM, reducing explicit per-artifact pinning.</li>
+<li><code>spring-cloud-starter-netflix-eureka-server</code> is declared globally even though only the registration process needs server functionality.</li>
+<li>Embedded HSQLDB is suitable for demos but not production-grade persistence.</li>
+</ul>
+<h2 id="test-dependencies">Test Dependencies</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Framework</th><th>Version</th><th>Notes</th>
+</tr></thead><tbody>
+<tr><td>spring-boot-starter-test</td><td>managed by Spring Boot 2.4.2</td><td>Includes JUnit/assertion tooling bundle</td></tr>
+</tbody></table></div>
+<p>Total test-scope dependencies: 1</p>
+<p>Test infrastructure is minimal and centered on Spring Boot test starter; no specialized integration/container test libraries are declared.</p></div>
+</div>
+<div id="tab-data" class="tab-panel">
+  <div class="fact-content"><h1 id="data-architecture-persistence-layer">Data Architecture & Persistence Layer</h1>
+<p>The data layer is centered on a single relational account model backed by an embedded database and accessed through Spring Data JPA. Persistence is owned by the accounts service; web and registration services are stateless regarding domain data.</p>
+<h2 id="database-configuration">Database Configuration</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service/Module</th><th>DB Type</th><th>Profile</th><th>Driver</th><th>Connection</th><th>Migration Tool</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>Embedded HSQLDB (in-memory)</td><td>default</td><td>Embedded DB builder managed</td><td>Programmatic DataSource with schema/data SQL scripts</td><td>None (schema.sql + data.sql bootstrap scripts)</td></tr>
+<tr><td>web-service</td><td>None</td><td>default</td><td>N/A</td><td>JDBC auto-config excluded</td><td>N/A</td></tr>
+<tr><td>registration-server</td><td>None</td><td>default</td><td>N/A</td><td>JDBC auto-config excluded</td><td>N/A</td></tr>
+</tbody></table></div>
+<h2 id="data-ownership-per-service">Data Ownership per Service</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Tables Owned</th><th>ORM Framework</th><th>Caching</th><th>Notes</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>T_ACCOUNT</td><td>Spring Data JPA (Hibernate)</td><td>None</td><td>Single bounded context for account records</td></tr>
+<tr><td>web-service</td><td>None</td><td>None</td><td>None</td><td>Reads account data through REST API</td></tr>
+<tr><td>registration-server</td><td>None</td><td>None</td><td>None</td><td>Service registry only</td></tr>
+</tbody></table></div>
+<h2 id="entity-model">Entity Model</h2>
+<div class="mermaid">
+erDiagram
+    Account {
+        long id PK
+        string number UK
+        string owner
+        decimal balance
+    }
+</div>
+<h2 id="key-repository-methods">Key Repository Methods</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>Service</th><th>Repository</th><th>Notable Methods</th><th>Purpose</th>
+</tr></thead><tbody>
+<tr><td>accounts-service</td><td>AccountRepository (<code>src/main/java/io/pivotal/microservices/accounts/AccountRepository.java</code>)</td><td><code>findByNumber(String)</code>, <code>findByOwnerContainingIgnoreCase(String)</code>, <code>countAccounts()</code></td><td>Primary account lookup and search operations for REST endpoints</td></tr>
+</tbody></table></div>
+<h2 id="caching-strategy">Caching Strategy</h2>
+<p>No explicit caching provider, cache regions, or cache annotations were detected. The persistence path is direct controller/service to JPA repository to embedded relational storage.</p>
+<h2 id="data-ownership-boundaries">Data Ownership Boundaries</h2>
+<p>This system follows <strong>single-service data ownership</strong>: only accounts-service owns and mutates persisted domain data. Cross-service reads occur via HTTP calls from web-service to accounts-service, with no direct shared database access by web-service or registration-server.</p>
+<h3 id="data-classification-sensitivity">Data Classification & Sensitivity</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>Entity</th><th>Sensitive Fields</th><th>Classification (PII/PHI/PCI/None)</th><th>Controls in Place</th>
+</tr></thead><tbody>
+<tr><td>Account</td><td>owner (person name), number (account identifier)</td><td>PII</td><td>No explicit encryption-at-rest or masking controls declared in code/config</td></tr>
+</tbody></table></div></div>
+</div>
+<p class="footer">Your feedback is invaluable &mdash; <a href="https://aka.ms/ghcp-appmod/feedback">Share feedback</a></p>
+<script>
+function toggleRow(rowId, triggerRow) {
+  var detail = document.getElementById(rowId);
+  var btn = document.getElementById('btn-' + rowId);
+  if (!detail) return;
+  var visible = detail.style.display !== 'none';
+  detail.style.display = visible ? 'none' : 'table-row';
+  if (btn) btn.classList.toggle('open', !visible);
+}
+(function() {
+  var nav = document.querySelector('.tab-nav');
+  if (!nav) return;
+  nav.addEventListener('click', function(e) {
+    var btn = e.target.closest('.tab-btn');
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var panel = document.getElementById(targetId);
+    if (panel) {
+      panel.classList.add('active');
+      if (window.__mermaidReady) { window.__renderMermaidIn(panel); }
+    }
+  });
+})();
+
+// ── Diagram lightbox ────────────────────────────────────────
+(function() {
+  var lightbox = document.getElementById('diagram-lightbox');
+  var inner = document.getElementById('diagram-lightbox-inner');
+  var closeBtn = document.getElementById('diagram-lightbox-close');
+  if (!lightbox || !inner || !closeBtn) return;
+
+  var scale = 1;
+  var translateX = 0;
+  var translateY = 0;
+  var isDragging = false;
+  var dragStartX = 0;
+  var dragStartY = 0;
+
+  function applyTransform() {
+    var svg = inner.querySelector('svg');
+    if (svg) {
+      svg.style.transform = 'translate(' + translateX + 'px, ' + translateY + 'px) scale(' + scale + ')';
+      svg.style.transformOrigin = 'center center';
+      svg.style.transition = 'none';
+    }
+  }
+
+  function resetTransform() {
+    scale = 1; translateX = 0; translateY = 0;
+    applyTransform();
+  }
+
+  function openLightbox(svgEl) {
+    inner.innerHTML = svgEl.outerHTML;
+    var injected = inner.querySelector('svg');
+    if (injected) {
+      injected.removeAttribute('width');
+      injected.removeAttribute('height');
+      injected.style.cursor = 'grab';
+    }
+    resetTransform();
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    inner.innerHTML = '';
+    document.body.style.overflow = '';
+    resetTransform();
+  }
+
+  inner.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    var delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(scale * delta, 0.3), 8);
+    applyTransform();
+  }, { passive: false });
+
+  inner.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragStartX = e.clientX - translateX;
+    dragStartY = e.clientY - translateY;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grabbing'; }
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - dragStartX;
+    translateY = e.clientY - dragStartY;
+    applyTransform();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    var svg = inner.querySelector('svg');
+    if (svg) { svg.style.cursor = 'grab'; }
+  });
+
+  inner.addEventListener('dblclick', function() { resetTransform(); });
+
+  document.addEventListener('click', function(e) {
+    var card = e.target.closest('.mermaid');
+    if (!card) return;
+    if (e.target.closest('.diagram-lightbox-close')) return;
+    var svg = card.querySelector('svg');
+    if (svg) { openLightbox(svg); }
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) { closeLightbox(); }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeLightbox(); }
+  });
+})();
+
+var _currentTarget = '';
+
+function toggleMultiSelect(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  document.querySelectorAll('.multi-select.open').forEach(function(ms) { if (ms.id !== id) ms.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.multi-select.open').forEach(function(ms) { ms.classList.remove('open'); });
+  }
+});
+
+function getMultiSelectValues(msId) {
+  var el = document.getElementById(msId);
+  if (!el) return [];
+  var checked = el.querySelectorAll('input[type=checkbox]:checked');
+  var vals = [];
+  for (var i = 0; i < checked.length; i++) vals.push(checked[i].value);
+  return vals;
+}
+
+function onMultiSelectChange(msId, label) {
+  var el = document.getElementById(msId);
+  if (!el) return;
+  var vals = getMultiSelectValues(msId);
+  var total = el.querySelectorAll('input[type=checkbox]').length;
+  var btn = el.querySelector('.multi-select-btn');
+  if (btn) {
+    btn.textContent = vals.length > 0 && vals.length < total ? label + ' (' + vals.length + ')' : label;
+  }
+  applyFilters();
+}
+
+function applyFilters() {
+  var selectedDomains = getMultiSelectValues('domain-ms');
+  var selectedCrits = getMultiSelectValues('criticality-ms');
+
+  var sections = document.querySelectorAll('.issue-section');
+  for (var i = 0; i < sections.length; i++) {
+    var domain = sections[i].getAttribute('data-domain');
+    sections[i].style.display = (selectedDomains.length === 0 || selectedDomains.indexOf(domain) >= 0) ? '' : 'none';
+  }
+
+  var rows = document.querySelectorAll('.issue-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var section = row.closest('.issue-section');
+    if (section && section.style.display === 'none') {
+      row.style.display = 'none';
+      var next = row.nextElementSibling;
+      if (next && next.classList.contains('detail-row')) next.style.display = 'none';
+      continue;
+    }
+
+    var show = true;
+    if (_currentTarget && row.hasAttribute('data-targets')) {
+      var targetsStr = row.getAttribute('data-targets');
+      if (targetsStr && targetsStr !== '{}') {
+        try {
+          var targets = JSON.parse(targetsStr);
+          if (Object.keys(targets).length > 0 && !targets[_currentTarget]) {
+            show = false;
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (show && selectedCrits.length > 0) {
+      var crit = row.getAttribute('data-criticality');
+      if (selectedCrits.indexOf(crit) < 0) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+    var nextRow = row.nextElementSibling;
+    if (nextRow && nextRow.classList.contains('detail-row')) {
+      if (!show) nextRow.style.display = 'none';
+    }
+  }
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('.multi-select input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+  var domainBtn = document.querySelector('#domain-ms .multi-select-btn');
+  if (domainBtn) domainBtn.textContent = 'Domain';
+  var critBtn = document.querySelector('#criticality-ms .multi-select-btn');
+  if (critBtn) critBtn.textContent = 'Criticality';
+  applyFilters();
+}
+
+function onTargetChange(targetId) {
+  _currentTarget = targetId;
+  var rows = document.querySelectorAll('.issue-row[data-targets]');
+  var totalEffort = 0;
+  var domainCrits = {};
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var targets = JSON.parse(row.getAttribute('data-targets'));
+    var section = row.closest('.issue-section');
+    var domain = section ? section.getAttribute('data-domain') : '';
+
+    if (!targets || Object.keys(targets).length === 0) {
+      var sp = parseFloat(row.querySelector('.sp-cell').textContent) || 0;
+      totalEffort += sp;
+      if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+      var crit = row.getAttribute('data-criticality') || 'optional';
+      domainCrits[domain][crit] = (domainCrits[domain][crit] || 0) + 1;
+      continue;
+    }
+
+    var override = targets[targetId];
+    if (!override) {
+      continue;
+    }
+
+    var newSeverity = (override.severity || row.getAttribute('data-default-severity') || '').toLowerCase();
+    row.setAttribute('data-criticality', newSeverity);
+    var critCell = row.querySelector('.crit-cell');
+    if (critCell) {
+      var critText = newSeverity === 'mandatory' ? 'Mandatory' : newSeverity === 'potential' ? 'Potential' : 'Optional';
+      var cssClass = newSeverity === 'mandatory' ? 'crit-square-mandatory' : newSeverity === 'potential' ? 'crit-square-potential' : 'crit-square-optional';
+      critCell.innerHTML = '<span class="crit-label"><span class="crit-square ' + cssClass + '"></span>' + critText + '</span>';
+    }
+
+    var newEffort = override.effort !== undefined ? override.effort : parseFloat(row.getAttribute('data-default-effort')) || 0;
+    var spCell = row.querySelector('.sp-cell');
+    if (spCell) spCell.textContent = newEffort;
+    totalEffort += newEffort;
+
+    if (!domainCrits[domain]) domainCrits[domain] = {mandatory:0,potential:0,optional:0};
+    domainCrits[domain][newSeverity] = (domainCrits[domain][newSeverity] || 0) + 1;
+  }
+
+  var secSection = document.querySelector('.issue-section[data-domain="security"]');
+  if (secSection) {
+    var secRows = secSection.querySelectorAll('.issue-row');
+    for (var j = 0; j < secRows.length; j++) {
+      if (!secRows[j].hasAttribute('data-targets') || secRows[j].getAttribute('data-targets') === '') {
+        var sp = parseFloat(secRows[j].querySelector('.sp-cell').textContent) || 0;
+        totalEffort += sp;
+        if (!domainCrits['security']) domainCrits['security'] = {mandatory:0,potential:0,optional:0};
+        var sc = secRows[j].getAttribute('data-criticality') || 'optional';
+        domainCrits['security'][sc] = (domainCrits['security'][sc] || 0) + 1;
+      }
+    }
+  }
+
+  var label = totalEffort < 20 ? 'S' : totalEffort < 50 ? 'M' : totalEffort < 100 ? 'L' : 'XL';
+  var effortEl = document.getElementById('effort-display');
+  if (effortEl) effortEl.textContent = label + ' (total story points: ' + totalEffort + ')';
+
+  updateDonuts(domainCrits);
+  applyFilters();
+}
+
+function updateDonuts(domainCrits) {
+  var container = document.getElementById('donut-container');
+  if (!container) return;
+  container.innerHTML = '';
+  var domainNames = {'cloud-readiness':'Cloud Readiness','java-upgrade':'Java Upgrade','dotnet-upgrade':'DotNET Upgrade','security':'Security'};
+  var domainOrder = ['cloud-readiness','java-upgrade','dotnet-upgrade','security'];
+  for (var d = 0; d < domainOrder.length; d++) {
+    var key = domainOrder[d];
+    var c = domainCrits[key];
+    if (!c || (c.mandatory + c.potential + c.optional) === 0) continue;
+    var total = c.mandatory + c.potential + c.optional;
+    var div = document.createElement('div');
+    div.className = 'domain-summary-item';
+    div.innerHTML = buildDonutSvg(c.mandatory, c.potential, c.optional) +
+      '<h3>' + domainNames[key] + '</h3>' +
+      '<div class="count">' + total + ' issue' + (total !== 1 ? 's' : '') + '</div>';
+    container.appendChild(div);
+  }
+}
+
+function buildDonutSvg(m, p, o) {
+  var total = m + p + o;
+  if (total === 0) return '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;"><circle cx="50" cy="50" r="35" fill="none" stroke="#d0d7de" stroke-width="15" opacity="0.5"/></svg>';
+  var r = 35, circ = 2 * Math.PI * r, offset = 0;
+  var svg = '<svg viewBox="0 0 100 100" width="100" height="100" style="display:block;margin:0 auto;transform:rotate(-90deg);">';
+  var segs = [{c:m,color:'var(--color-mandatory)'},{c:p,color:'var(--color-potential)'},{c:o,color:'var(--color-optional)'}];
+  for (var i = 0; i < segs.length; i++) {
+    if (segs[i].c === 0) continue;
+    var segLen = (segs[i].c / total) * circ;
+    var gap = total > segs[i].c ? 1.5 : 0;
+    var drawLen = Math.max(segLen - gap, 0.5);
+    svg += '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + segs[i].color + '" stroke-width="15" stroke-dasharray="' + drawLen.toFixed(2) + ' ' + circ.toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '"/>';
+    offset += segLen;
+  }
+  svg += '</svg>';
+  return svg;
+}
+</script>
+<script>document.addEventListener('DOMContentLoaded', function() { onTargetChange('azure-aks'); });</script>
+</div></body></html>
